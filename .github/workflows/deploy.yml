@@ -34,8 +34,8 @@ jobs:
 
       - name: Copy Build Files to EC2
         run: |
-          scp -r dist/github-actions-angular/browser/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/angular-build
-
+          scp -r dist/github-actions-angular/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/angular-build
+          
       - name: Deploy to Web Server
         run: |
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
