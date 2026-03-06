@@ -2,7 +2,8 @@ name: Angular Deploy to Dev Server
 
 on:
 push:
-branches: [ main ]
+branches:
+- main
 
 jobs:
 deploy:
@@ -16,24 +17,23 @@ steps:
   - name: Setup Node
     uses: actions/setup-node@v4
     with:
-      node-version: '22'
+      node-version: "22"
 
   - name: Install dependencies
-    run: npm install
+    run: npm ci
 
   - name: Build Angular
     run: npm run build -- --configuration=production --base-href=/GitHub-actions/angular/
 
-  - name: Setup SSH
+  - name: Configure SSH
     run: |
       mkdir -p ~/.ssh
       echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
       chmod 600 ~/.ssh/id_rsa
       ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-  - name: Copy files to EC2
-    run: |
-      scp -r dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/angular-build
+  - name: Copy build to server
+    run: scp -r dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/angular-build
 
   - name: Deploy on EC2
     run: |
