@@ -1,29 +1,48 @@
-name: Deploy Static Website
+name: Deploy Angular App to Dev Server
 
 on:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+push:
+branches:
+- main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+build-and-deploy:
+runs-on: ubuntu-latest
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
+```
+steps:
+  - name: Checkout Repository
+    uses: actions/checkout@v4
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
-        with:
-          path: '.'
+  - name: Setup Node
+    uses: actions/setup-node@v4
+    with:
+      node-version: 22
+      cache: npm
 
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v2
+  - name: Install Dependencies
+    run: npm ci
+
+  - name: Build Angular App
+    run: npm run build -- --configuration=production --base-href=/GitHub-actions/angular/
+
+  - name: Setup SSH
+    run: |
+      mkdir -p ~/.ssh
+      echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
+      chmod 600 ~/.ssh/id_rsa
+      ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+  - name: Copy Build to EC2
+    run: |
+      scp -r dist/github-actions-angular/browser/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/angular-build
+
+  - name: Deploy to Web Directory
+    run: |
+      ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+        sudo mkdir -p /var/www/html/GitHub-actions/angular
+        sudo rm -rf /var/www/html/GitHub-actions/angular/*
+        sudo mkdir -p /tmp/angular-build
+        sudo mv /tmp/angular-build/* /var/www/html/GitHub-actions/angular/
+      "
+```
