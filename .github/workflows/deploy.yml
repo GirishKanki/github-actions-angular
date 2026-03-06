@@ -1,49 +1,41 @@
-name: Angular CI-CD Deploy to Dev Server
+name: Angular Deploy to Dev Server
 
 on:
 push:
-branches:
-- main
+branches: [ main ]
 
 jobs:
-build-and-deploy:
+deploy:
 runs-on: ubuntu-latest
 
 ```
 steps:
-
-  - name: Checkout Repository
+  - name: Checkout code
     uses: actions/checkout@v4
 
-  - name: Setup Node.js
+  - name: Setup Node
     uses: actions/setup-node@v4
     with:
-      node-version: 22
-      cache: npm
+      node-version: '22'
 
-  - name: Install Dependencies
-    run: npm ci
+  - name: Install dependencies
+    run: npm install
 
-  - name: Build Angular Application
-    run: |
-      npm run build -- --configuration=production --base-href=/GitHub-actions/angular/
+  - name: Build Angular
+    run: npm run build -- --configuration=production --base-href=/GitHub-actions/angular/
 
-  - name: Setup SSH Access
+  - name: Setup SSH
     run: |
       mkdir -p ~/.ssh
       echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
       chmod 600 ~/.ssh/id_rsa
       ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-  - name: Copy Angular Build to EC2
+  - name: Copy files to EC2
     run: |
       scp -r dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/angular-build
 
-  - name: Deploy Build to Web Server
+  - name: Deploy on EC2
     run: |
-      ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-        sudo mkdir -p /var/www/html/GitHub-actions/angular
-        sudo rm -rf /var/www/html/GitHub-actions/angular/*
-        sudo cp -r /tmp/angular-build/* /var/www/html/GitHub-actions/angular/
-      "
+      ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo mkdir -p /var/www/html/GitHub-actions/angular && sudo rm -rf /var/www/html/GitHub-actions/angular/* && sudo cp -r /tmp/angular-build/* /var/www/html/GitHub-actions/angular/"
 ```
