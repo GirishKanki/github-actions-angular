@@ -4,13 +4,23 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "Branch to deploy"
+        description: "Select Branch"
         required: true
         default: "develop"
+        type: choice
+        options:
+          - develop
+          - main
+        
       env:
-        description: "Environment"
+        description: "Select Environment"
         required: true
         default: "dev"
+        type: choice
+        options:
+          - dev
+          - india
+          - uk
 
 jobs:
   build-and-deploy:
