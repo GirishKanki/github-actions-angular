@@ -43,7 +43,29 @@ jobs:
       #  Build based on environment
       - name: Build Angular App
         run: |
-          npm run build --configuration development
+          ENV="${{ github.event.inputs.env }}"
+
+          echo "Selected ENV: $ENV"
+
+          case "$ENV" in
+            "dev")
+              CONFIG="development"
+              ;;
+            "india")
+              CONFIG="india"
+              ;;
+            "uk")
+              CONFIG="uk"
+              ;;
+            *)
+              echo " Invalid environment: $ENV"
+              exit 1
+              ;;
+          esac
+
+          echo "Using Angular config: $CONFIG"
+          npm run build -- --configuration=$CONFIG --base-href=/GitHub-actions/angular/
+          
 
       - name: Show Build Output
         run: |
