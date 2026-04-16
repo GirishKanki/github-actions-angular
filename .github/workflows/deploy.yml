@@ -43,7 +43,7 @@ jobs:
       #  Build based on environment
       - name: Build Angular App
         run: |
-          npm run build -- --configuration=development --base-href=/GitHub-actions/angular/
+          npm run build --configuration dev
 
       - name: Show Build Output
         run: |
