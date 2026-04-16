@@ -1,18 +1,26 @@
-name: Build Angular App
+name: Angular Deploy Pipeline
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        default: "develop"
+      env:
+        description: "Environment"
+        required: true
+        default: "dev"
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Checkout Repository
+      - name: Checkout Selected Branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -22,16 +30,22 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build Angular Project
-        run: npm run build -- --configuration=production --base-href=/GitHub-actions/angular/
-        
-      - name: Show Build Folder
+      #  Build based on environment
+      - name: Build Angular App
         run: |
-         echo "Project files:"
-         ls
-         echo "Dist files:"
-         ls -R dist
-  
+          if [ "${{ github.event.inputs.env }}" = "dev" ]; then
+            npm run build -- --configuration=dev --base-href=/GitHub-actions/angular/
+          elif [ "${{ github.event.inputs.env }}" = "india" ]; then
+            npm run build -- --configuration=india --base-href=/GitHub-actions/angular/
+          elif [ "${{ github.event.inputs.env }}" = "uk" ]; then
+            npm run build -- --configuration=uk --base-href=/GitHub-actions/angular/
+          fi
+
+      - name: Show Build Output
+        run: |
+          echo "Dist files:"
+          ls -R dist
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -39,13 +53,22 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
+      #  Stop Apache
+      - name: Stop Apache
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl stop apache2"
+
+      #  Copy Build Files (IMPORTANT FIX)
       - name: Copy Build Files to EC2
         run: |
-          scp -r dist/my-first-project/browser/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/angular-build
-          
-      - name: Deploy to Web Server
+          scp -r dist/*/browser/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/angular-build
+
+      #  Deploy + Start Apache
+      - name: Deploy and Start Apache
         run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
             sudo rm -rf /var/www/html/GitHub-actions/angular/*
+            
             sudo mv /tmp/angular-build/* /var/www/html/GitHub-actions/angular/
+            sudo systemctl start apache2
           "
