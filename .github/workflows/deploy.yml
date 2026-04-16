@@ -43,7 +43,7 @@ jobs:
       #  Build based on environment
       - name: Build Angular App
         run: |
-          npm run build --configuration dev
+          npm run build --configuration development
 
       - name: Show Build Output
         run: |
