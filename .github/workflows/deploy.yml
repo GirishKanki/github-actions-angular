@@ -43,17 +43,7 @@ jobs:
       #  Build based on environment
       - name: Build Angular App
         run: |
-          echo "Selected ENV: ${{ github.event.inputs.env }}"
-          
-          # Map dev → development (Angular default
-          if [ "${{ github.event.inputs.env }}" = "dev" ]; then
-            CONFIG=development
-          else
-            CONFIG=${{ github.event.inputs.env }}
-          fi
-
-          echo "Using Angular config: $CONFIG"
-          npm run build -- --configuration=$CONFIG --base-href=/GitHub-actions/angular/
+          npm run build -- --configuration=development --base-href=/GitHub-actions/angular/
 
       - name: Show Build Output
         run: |
