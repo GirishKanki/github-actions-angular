@@ -44,7 +44,7 @@ jobs:
       - name: Build Angular App
         run: |
           if [ "${{ github.event.inputs.env }}" = "dev" ]; then
-            npm run build -- --configuration=dev --base-href=/GitHub-actions/angular/
+            npm run build -- --configuration=development --base-href=/GitHub-actions/angular/
           elif [ "${{ github.event.inputs.env }}" = "india" ]; then
             npm run build -- --configuration=india --base-href=/GitHub-actions/angular/
           elif [ "${{ github.event.inputs.env }}" = "uk" ]; then
