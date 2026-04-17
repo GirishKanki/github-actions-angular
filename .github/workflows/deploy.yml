@@ -109,13 +109,13 @@ jobs:
 
           case "$ENV" in
             development)
-              echo "${{ secrets.DEV_KEY }}" > ~/.ssh/id_rsa
+              printf "%s" "${{ secrets.DEV_KEY }}" > ~/.ssh/id_rsa
               ;;
             india)
-              echo "${{ secrets.INDIA_KEY }}" > ~/.ssh/id_rsa
+              printf "%s" "${{ secrets.INDIA_KEY }}" > ~/.ssh/id_rsa
               ;;
             uk)
-              echo "${{ secrets.UK_KEY }}" > ~/.ssh/id_rsa
+              printf "%s" "${{ secrets.UK_KEY }}" > ~/.ssh/id_rsa
               ;;
             *)
               echo "Invalid environment: $ENV"
