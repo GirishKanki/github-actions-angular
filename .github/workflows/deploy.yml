@@ -81,19 +81,16 @@ jobs:
             dev)
               echo "HOST=${{ secrets.DEV_HOST }}" >> $GITHUB_ENV
               echo "USER=${{ secrets.DEV_USER }}" >> $GITHUB_ENV
-              echo "KEY=${{ secrets.DEV_KEY }}" >> $GITHUB_ENV
               ;;
 
             india)
               echo "HOST=${{ secrets.INDIA_HOST }}" >> $GITHUB_ENV
               echo "USER=${{ secrets.INDIA_USER }}" >> $GITHUB_ENV
-              echo "KEY=${{ secrets.INDIA_KEY }}" >> $GITHUB_ENV
               ;;
 
             uk)
               echo "HOST=${{ secrets.UK_HOST }}" >> $GITHUB_ENV
               echo "USER=${{ secrets.UK_USER }}" >> $GITHUB_ENV
-              echo "KEY=${{ secrets.UK_KEY }}" >> $GITHUB_ENV
               ;;
 
             *)
@@ -108,9 +105,28 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
+          ENV="${{ github.event.inputs.env }}"
+
+          case "$ENV" in
+            dev)
+              echo "${{ secrets.DEV_KEY }}" > ~/.ssh/id_rsa
+              ;;
+            india)
+              echo "${{ secrets.INDIA_KEY }}" > ~/.ssh/id_rsa
+              ;;
+            uk)
+              echo "${{ secrets.UK_KEY }}" > ~/.ssh/id_rsa
+              ;;
+            *)
+              echo "Invalid environment: $ENV"
+              exit 1
+              ;;
+          esac
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+
+          
 
       #  Stop Apache
       - name: Stop Apache
