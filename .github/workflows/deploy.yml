@@ -72,6 +72,39 @@ jobs:
           echo "Dist files:"
           ls -R dist
 
+
+      #  Select Server Based on ENV
+      - name: Set Server Config
+        run: |
+          ENV="${{ github.event.inputs.env }}"
+          case "$ENV" in
+            dev)
+              echo "HOST=${{ secrets.DEV_HOST }}" >> $GITHUB_ENV
+              echo "USER=${{ secrets.DEV_USER }}" >> $GITHUB_ENV
+              echo "KEY=${{ secrets.DEV_KEY }}" >> $GITHUB_ENV
+              ;;
+
+            india)
+              echo "HOST=${{ secrets.INDIA_HOST }}" >> $GITHUB_ENV
+              echo "USER=${{ secrets.INDIA_USER }}" >> $GITHUB_ENV
+              echo "KEY=${{ secrets.INDIA_KEY }}" >> $GITHUB_ENV
+              ;;
+
+            uk)
+              echo "HOST=${{ secrets.UK_HOST }}" >> $GITHUB_ENV
+              echo "USER=${{ secrets.UK_USER }}" >> $GITHUB_ENV
+              echo "KEY=${{ secrets.UK_KEY }}" >> $GITHUB_ENV
+              ;;
+
+            *)
+              echo " Invalid environment: $ENV"
+              exit 1
+              ;;
+
+          esac
+          
+          
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -82,19 +115,22 @@ jobs:
       #  Stop Apache
       - name: Stop Apache
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl stop apache2"
+          ssh -o StrictHostKeyChecking=no $USER@$HOST "sudo systemctl stop apache2"
 
       #  Copy Build Files (IMPORTANT FIX)
       - name: Copy Build Files to EC2
         run: |
-          scp -r dist/*/browser/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/angular-build
+          scp -r dist/*/browser/* $USER@$HOST:/tmp/angular-build
 
       #  Deploy + Start Apache
       - name: Deploy and Start Apache
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          ssh -o StrictHostKeyChecking=no $USER@$HOST "
             sudo rm -rf /var/www/html/GitHub-actions/angular/*
-            
+            sudo mkdir -p /var/www/html/GitHub-actions/angular
             sudo mv /tmp/angular-build/* /var/www/html/GitHub-actions/angular/
             sudo systemctl start apache2
           "
+
+
+          
