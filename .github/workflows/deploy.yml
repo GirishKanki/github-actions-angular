@@ -79,25 +79,27 @@ jobs:
           ENV="${{ github.event.inputs.env }}"
           case "$ENV" in
             dev)
-              echo "HOST=${{ secrets.DEV_HOST }}" >> $GITHUB_ENV
-              echo "USER=${{ secrets.DEV_USER }}" >> $GITHUB_ENV
+              {
+                echo "HOST=${{ secrets.DEV_HOST }}" >> $GITHUB_ENV
+                echo "USER=${{ secrets.DEV_USER }}" >> $GITHUB_ENV
+              } >> $GITHUB_ENV
               ;;
-
             india)
-              echo "HOST=${{ secrets.INDIA_HOST }}" >> $GITHUB_ENV
-              echo "USER=${{ secrets.INDIA_USER }}" >> $GITHUB_ENV
+              {
+                echo "HOST=${{ secrets.INDIA_HOST }}" >> $GITHUB_ENV
+                echo "USER=${{ secrets.INDIA_USER }}" >> $GITHUB_ENV
+              } >> $GITHUB_ENV
               ;;
-
             uk)
-              echo "HOST=${{ secrets.UK_HOST }}" >> $GITHUB_ENV
-              echo "USER=${{ secrets.UK_USER }}" >> $GITHUB_ENV
+              {
+                echo "HOST=${{ secrets.UK_HOST }}" >> $GITHUB_ENV
+                echo "USER=${{ secrets.UK_USER }}" >> $GITHUB_ENV
+              } >> $GITHUB_ENV
               ;;
-
             *)
               echo " Invalid environment: $ENV"
               exit 1
               ;;
-
           esac
           
           
