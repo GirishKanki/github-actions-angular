@@ -78,7 +78,7 @@ jobs:
         run: |
           ENV="${{ github.event.inputs.env }}"
           case "$ENV" in
-            dev)
+            development)
               echo "HOST=${{ secrets.DEV_HOST }}" >> $GITHUB_ENV
               echo "USER=${{ secrets.DEV_USER }}" >> $GITHUB_ENV
               ;;
