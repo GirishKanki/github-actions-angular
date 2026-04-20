@@ -1,0 +1,154 @@
+name: Angular Deploy Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Select Branch"
+        required: true
+        default: "develop"
+        type: choice
+        options:
+          - develop
+          - main
+        
+      env:
+        description: "Select Environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - india
+          - uk
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Selected Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      #  Build based on environment
+      - name: Build Angular App
+        run: |
+          ENV="${{ github.event.inputs.env }}"
+
+          echo "Selected ENV: $ENV"
+
+          case "$ENV" in
+            "dev")
+              CONFIG="development"
+              ;;
+            "india")
+              CONFIG="india"
+              ;;
+            "uk")
+              CONFIG="uk"
+              ;;
+            *)
+              echo " Invalid environment: $ENV"
+              exit 1
+              ;;
+          esac
+
+          echo "Using Angular config: $CONFIG"
+          npm run build -- --configuration=$CONFIG --base-href=/GitHub-actions/angular/
+          
+
+      - name: Show Build Output
+        run: |
+          echo "Dist files:"
+          ls -R dist
+
+
+      #  Select Server Based on ENV
+      - name: Set Server Config
+        run: |
+          ENV="${{ github.event.inputs.env }}"
+          case "$ENV" in
+            dev)
+              {
+                echo "HOST=${{ secrets.DEV_HOST }}" >> $GITHUB_ENV
+                echo "USER=${{ secrets.DEV_USER }}" >> $GITHUB_ENV
+              } >> $GITHUB_ENV
+              ;;
+            india)
+              {
+                echo "HOST=${{ secrets.INDIA_HOST }}" >> $GITHUB_ENV
+                echo "USER=${{ secrets.INDIA_USER }}" >> $GITHUB_ENV
+              } >> $GITHUB_ENV
+              ;;
+            uk)
+              {
+                echo "HOST=${{ secrets.UK_HOST }}" >> $GITHUB_ENV
+                echo "USER=${{ secrets.UK_USER }}" >> $GITHUB_ENV
+              } >> $GITHUB_ENV
+              ;;
+            *)
+              echo " Invalid environment: $ENV"
+              exit 1
+              ;;
+          esac
+          
+          
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          ENV="${{ github.event.inputs.env }}"
+
+          case "$ENV" in
+            dev)
+              printf "%s" "${{ secrets.DEV_KEY }}" > ~/.ssh/id_rsa
+              ;;
+            india)
+              printf "%s" "${{ secrets.INDIA_KEY }}" > ~/.ssh/id_rsa
+              ;;
+            uk)
+              printf "%s" "${{ secrets.UK_KEY }}" > ~/.ssh/id_rsa
+              ;;
+            *)
+              echo "Invalid environment: $ENV"
+              exit 1
+              ;;
+          esac
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+
+          
+
+      #  Stop Apache
+      - name: Stop Apache
+        run: |
+          ssh -o StrictHostKeyChecking=no $USER@$HOST "sudo systemctl stop apache2"
+
+      #  Copy Build Files (IMPORTANT FIX)
+      - name: Copy Build Files to EC2
+        run: |
+          scp -r dist/*/browser/* $USER@$HOST:/tmp/angular-build
+
+      #  Deploy + Start Apache
+      - name: Deploy and Start Apache
+        run: |
+          ssh -o StrictHostKeyChecking=no $USER@$HOST "
+            sudo rm -rf /var/www/html/GitHub-actions/angular/*
+            sudo mkdir -p /var/www/html/GitHub-actions/angular
+            sudo mv /tmp/angular-build/* /var/www/html/GitHub-actions/angular/
+            sudo systemctl start apache2
+          "
+
+
+          
