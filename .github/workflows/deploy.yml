@@ -44,27 +44,31 @@ jobs:
       - name: Build Angular App
         run: |
           ENV="${{ github.event.inputs.env }}"
-
           echo "Selected ENV: $ENV"
 
           case "$ENV" in
-            "dev")
+             dev)
               CONFIG="development"
+              BASE_HREF="/GitHub-actions/angular-dev/"
               ;;
-            "india")
+            india)
               CONFIG="india"
+              BASE_HREF="/GitHub-actions/angular-india/"
               ;;
-            "uk")
+            uk)
               CONFIG="uk"
+              BASE_HREF="/GitHub-actions/angular-uk/"
               ;;
             *)
-              echo " Invalid environment: $ENV"
+              echo "Invalid environment: $ENV"
               exit 1
               ;;
           esac
 
           echo "Using Angular config: $CONFIG"
-          npm run build -- --configuration=$CONFIG --base-href=/GitHub-actions/angular/
+          echo "Using Base Href: $BASE_HREF"
+
+          npm run build -- --configuration=$CONFIG --base-href=$BASE_HREF
           
 
       - name: Show Build Output
@@ -74,8 +78,8 @@ jobs:
 
 
 
-      # setup ssh
-      - name: Setup SSH
+      # Setup SSH + Server + Path
+      - name: Setup SSH & Env Config
         run: |
           mkdir -p ~/.ssh
 
@@ -86,14 +90,20 @@ jobs:
             printf "%s" "${{ secrets.DEV_KEY }}" > ~/.ssh/id_rsa
             HOST="${{ secrets.DEV_HOST }}"
             USER="${{ secrets.DEV_USER }}"
+            DEPLOY_PATH="/var/www/html/GitHub-actions/angular-dev"
+
           elif [ "$ENV" = "india" ]; then
             printf "%s" "${{ secrets.INDIA_KEY }}" > ~/.ssh/id_rsa
             HOST="${{ secrets.INDIA_HOST }}"
             USER="${{ secrets.INDIA_USER }}"
+            DEPLOY_PATH="/var/www/html/GitHub-actions/angular-india"
+
           elif [ "$ENV" = "uk" ]; then
             printf "%s" "${{ secrets.UK_KEY }}" > ~/.ssh/id_rsa
             HOST="${{ secrets.UK_HOST }}"
             USER="${{ secrets.UK_USER }}"
+            DEPLOY_PATH="/var/www/html/GitHub-actions/angular-uk"
+
           else
             echo "Invalid environment: $ENV"
             exit 1
@@ -104,27 +114,31 @@ jobs:
 
           echo "HOST=$HOST" >> $GITHUB_ENV
           echo "USER=$USER" >> $GITHUB_ENV
+          echo "DEPLOY_PATH=$DEPLOY_PATH" >> $GITHUB_ENV
 
 
           
 
-      #  Stop Apache
+      # Stop Apache
       - name: Stop Apache
         run: |
           ssh -o StrictHostKeyChecking=no $USER@$HOST "sudo systemctl stop apache2"
 
-      # Ensure target folder exists & permissions
+
+      # Prepare Target Directory (NO DELETE)
       - name: Prepare Target Directory
         run: |
           ssh -o StrictHostKeyChecking=no $USER@$HOST "
-            sudo mkdir -p /var/www/html/GitHub-actions/angular
-            sudo chown -R $USER:$USER /var/www/html/GitHub-actions/angular
+            sudo mkdir -p $DEPLOY_PATH
+            sudo chown -R $USER:$USER $DEPLOY_PATH
           "
 
+
       # Copy Build Files DIRECTLY
-      - name: Copy Build Files to Server
+      - name: Copy Build Files
         run: |
-          scp -r dist/*/browser/* $USER@$HOST:/var/www/html/GitHub-actions/angular/
+          scp -r dist/*/browser/* $USER@$HOST:$DEPLOY_PATH/
+
 
       # Start Apache
       - name: Start Apache
