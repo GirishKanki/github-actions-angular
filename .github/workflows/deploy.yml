@@ -113,20 +113,22 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no $USER@$HOST "sudo systemctl stop apache2"
 
-      #  Copy Build Files (IMPORTANT FIX)
-      - name: Copy Build Files to EC2
-        run: |
-          scp -r dist/*/browser/* $USER@$HOST:/tmp/angular-build
-
-      #  Deploy + Start Apache
-      - name: Deploy and Start Apache
+      # Ensure target folder exists & permissions
+      - name: Prepare Target Directory
         run: |
           ssh -o StrictHostKeyChecking=no $USER@$HOST "
-            sudo rm -rf /var/www/html/GitHub-actions/angular/*
             sudo mkdir -p /var/www/html/GitHub-actions/angular
-            sudo mv /tmp/angular-build/* /var/www/html/GitHub-actions/angular/
-            sudo systemctl start apache2
+            sudo chown -R $USER:$USER /var/www/html/GitHub-actions/angular
           "
 
+      # Copy Build Files DIRECTLY
+      - name: Copy Build Files to Server
+        run: |
+          scp -r dist/*/browser/* $USER@$HOST:/var/www/html/GitHub-actions/angular/
+
+      # Start Apache
+      - name: Start Apache
+        run: |
+          ssh -o StrictHostKeyChecking=no $USER@$HOST "sudo systemctl start apache2"
 
           
