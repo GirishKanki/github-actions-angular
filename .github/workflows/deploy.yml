@@ -110,7 +110,7 @@ jobs:
           ENV="${{ github.event.inputs.env }}"
 
           case "$ENV" in
-            development)
+            dev)
               printf "%s" "${{ secrets.DEV_KEY }}" > ~/.ssh/id_rsa
               ;;
             india)
